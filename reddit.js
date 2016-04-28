@@ -109,8 +109,57 @@ module.exports = function RedditAPI(conn) {
           }
           else {
             var postsArray = [];
+            var newPostObj = {};
             results.map(function(postObj){
-              var newPostObj = {
+              newPostObj = {
+                id: postObj.post_id,
+                title: postObj.post_title,
+                url: postObj.post_url,
+                createdAt: postObj.post_createdAt,
+                updatedAt: postObj.post_updatedAt,
+                userId: postObj.post_userId,
+                user: {
+                  id: postObj.user_id,
+                  username: postObj.user_username,
+                  createdAt: postObj.user_createdAt,
+                  updatedAt: postObj.user_updatedAt
+                }
+              };
+            postsArray.push(newPostObj);
+            });
+          callback(null, postsArray);
+          }
+        }
+      );
+    },
+    getAllPostsForUser: function(userId, options, callback) {
+      if (!callback) {
+        callback = options;
+        options = {};
+      }
+      var limit = options.numPerPage || 25; // if options.numPerPage is "falsy" then use 25
+      var offset = (options.page || 0) * limit;
+      
+      conn.query(`
+        SELECT  
+          posts.id AS post_id, posts.title AS post_title, posts.url AS post_url, posts.userId AS post_userId, 
+          posts.createdAt AS post_createdAt, posts.updatedAt AS post_updatedAt, users.id AS user_id,
+          users.username AS user_username, users.createdAt AS user_createdAt, users.updatedAt AS user_updatedAt
+        FROM posts
+        JOIN users ON posts.userId=users.id
+        WHERE posts.userId=?
+        ORDER BY posts.createdAt DESC
+        LIMIT ? OFFSET ?
+        `, [userId, limit, offset],
+        function(err, results) {
+          if (err) {
+            callback(err);
+          }
+          else {
+            var postsArray = [];
+            var newPostObj = {};
+            results.map(function(postObj){
+              newPostObj = {
                 id: postObj.post_id,
                 title: postObj.post_title,
                 url: postObj.post_url,
