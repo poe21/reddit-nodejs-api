@@ -58,9 +58,9 @@ module.exports = function RedditAPI(conn) {
         }
       });
     },
-    createPost: function(post, callback) {
+    createPost: function(post, subredditId, callback) {
       conn.query(
-        'INSERT INTO `posts` (`userId`, `title`, `url`, `createdAt`) VALUES (?, ?, ?, ?)', [post.userId, post.title, post.url, null],
+        'INSERT INTO `posts` (`userId`, `title`, `url`, `subredditId`, `createdAt`) VALUES (?, ?, ?, ?, ?)', [post.userId, post.title, post.url, subredditId, null],
         function(err, result) {
           if (err) {
             callback(err);
@@ -71,7 +71,7 @@ module.exports = function RedditAPI(conn) {
             the post and send it to the caller!
             */
             conn.query(
-              'SELECT `id`,`title`,`url`,`userId`, `createdAt`, `updatedAt` FROM `posts` WHERE `id` = ?', [result.insertId],
+              'SELECT `id`,`title`,`url`,`userId`, `subredditId`, `createdAt`, `updatedAt` FROM `posts` WHERE `id` = ?', [result.insertId],
               function(err, result) {
                 if (err) {
                   callback(err);
@@ -96,10 +96,13 @@ module.exports = function RedditAPI(conn) {
       
       conn.query(`
         SELECT p.id AS post_id, p.title AS post_title, p.url AS post_url, p.userId AS post_userId, 
-          p.createdAt AS post_createdAt, p.updatedAt AS post_updatedAt, u.id AS user_id,
-          u.username AS user_username, u.createdAt AS user_createdAt, u.updatedAt AS user_updatedAt
+          p.createdAt AS post_createdAt, p.updatedAt AS post_updatedAt, s.id AS subreddit_id,
+          s.name AS subreddit_name, s.description AS subreddit_description, s.createdAt AS subreddit_createdAt,
+          s.updatedAt AS subreddit_updatedAt, u.id AS user_id, u.username AS user_username, 
+          u.createdAt AS user_createdAt, u.updatedAt AS user_updatedAt
         FROM posts p
-        JOIN users u ON p.userId=u.id
+        LEFT JOIN subreddits s ON p.subredditId=s.id
+        LEFT JOIN users u ON p.userId=u.id
         ORDER BY p.createdAt DESC
         LIMIT ? OFFSET ?
         `, [limit, offset],
@@ -112,14 +115,21 @@ module.exports = function RedditAPI(conn) {
             var newPostObj = {};
             results.map(function(postObj){
               newPostObj = {
-                id: postObj.post_id,
+                postId: postObj.post_id,
                 title: postObj.post_title,
                 url: postObj.post_url,
                 createdAt: postObj.post_createdAt,
                 updatedAt: postObj.post_updatedAt,
                 userId: postObj.post_userId,
+                subreddit: {
+                  subredditId: postObj.subreddit_id,
+                  name: postObj.subreddit_name,
+                  description: postObj.subreddit_description,
+                  createdAt: postObj.subreddit_createdAt,
+                  updatedAt: postObj.subreddit_updatedAt
+                },
                 user: {
-                  id: postObj.user_id,
+                  userId: postObj.user_id,
                   username: postObj.user_username,
                   createdAt: postObj.user_createdAt,
                   updatedAt: postObj.user_updatedAt
