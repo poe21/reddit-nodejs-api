@@ -41,3 +41,28 @@ CREATE TABLE `subreddits` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `name` (`name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+-- The first step will be to create a comments table. Each comment should have a unique, 
+-- auto incrementing id and a text anywhere from 1 to 10000 characters. 
+-- It should also have createdAt and updatedAt timestamps that you can copy from an existing table. 
+-- Each comment should also have a userId linking it to the user who created the comment 
+-- (using a foreign key), a postId linking it to the post which is being commented on, 
+-- and a parentId linking it to the comment it is replying to.  
+-- A top-level comment should have parentId set to NULL.
+
+CREATE TABLE `comments` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `text` VARCHAR(10000) DEFAULT NULL,
+  `createdAt` TIMESTAMP NOT NULL DEFAULT 0,
+  `updatedAt` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `userId` int(11) DEFAULT NULL,
+  `postId` int(11) DEFAULT NULL,
+  `parentId` int(11) DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `userId` (`userId`),
+  KEY `postId` (`postId`),
+  KEY `parentId` (`parentId`),
+  CONSTRAINT `comments_ibfk_3` FOREIGN KEY (`parentId`) REFERENCES `comments` (`id`),
+  CONSTRAINT `comments_ibfk_1` FOREIGN KEY (`userId`) REFERENCES `users` (`id`),
+  CONSTRAINT `comments_ibfk_2` FOREIGN KEY (`postId`) REFERENCES `posts` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
