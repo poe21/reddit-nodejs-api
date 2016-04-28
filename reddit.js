@@ -95,9 +95,12 @@ module.exports = function RedditAPI(conn) {
       var offset = (options.page || 0) * limit;
       
       conn.query(`
-        SELECT \`id\`,\`title\`,\`url\`,\`userId\`, \`createdAt\`, \`updatedAt\`
-        FROM \`posts\`
-        ORDER BY \`createdAt\` DESC
+        SELECT p.id AS post_id, p.title AS post_title, p.url AS post_url, p.userId AS post_userId, 
+          p.createdAt AS post_createdAt, p.updatedAt AS post_updatedAt, u.id AS user_id,
+          u.username AS user_username, u.createdAt AS user_createdAt, u.updatedAt AS user_updatedAt
+        FROM posts p
+        JOIN users u ON p.userId=u.id
+        ORDER BY p.createdAt DESC
         LIMIT ? OFFSET ?
         `, [limit, offset],
         function(err, results) {
@@ -105,10 +108,28 @@ module.exports = function RedditAPI(conn) {
             callback(err);
           }
           else {
-            callback(null, results);
+            var postsArray = [];
+            results.map(function(postObj){
+              var newPostObj = {
+                id: postObj.post_id,
+                title: postObj.post_title,
+                url: postObj.post_url,
+                createdAt: postObj.post_createdAt,
+                updatedAt: postObj.post_updatedAt,
+                userId: postObj.post_userId,
+                user: {
+                  id: postObj.user_id,
+                  username: postObj.user_username,
+                  createdAt: postObj.user_createdAt,
+                  updatedAt: postObj.user_updatedAt
+                }
+              };
+            postsArray.push(newPostObj);
+            });
+          callback(null, postsArray);
           }
         }
       );
     }
-  }
-}
+  };
+};
