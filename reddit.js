@@ -179,6 +179,65 @@ module.exports = function RedditAPI(conn) {
           }
         }
       );
+    },
+    getSinglePost: function(postId, callback){
+      conn.query(`
+        SELECT  
+          posts.id AS post_id, posts.title AS post_title, posts.url AS post_url, posts.userId AS post_userId, 
+          posts.createdAt AS post_createdAt, posts.updatedAt AS post_updatedAt, users.username AS user_username
+        FROM posts
+        JOIN users ON posts.userId=users.id
+        WHERE posts.id=?
+        LIMIT 1
+        `, [postId],
+        function(err, results) {
+          if (err) {
+            callback(err);
+          }
+          else {
+            var newPostObj = {};
+            results.map(function(postObj){
+              newPostObj = {
+                id: postObj.post_id,
+                title: postObj.post_title,
+                url: postObj.post_url,
+                createdAt: postObj.post_createdAt,
+                updatedAt: postObj.post_updatedAt,
+                userId: postObj.post_userId,
+                username: postObj.user_username
+              };
+            });
+            callback(null, newPostObj);
+          }
+        }
+      );
+    },
+    createSubreddit: function(sub, callback) {
+      conn.query(
+        'INSERT INTO `subreddits` (`name`, `description`, `createdAt`) VALUES (?, ?, ?)', [sub.name, sub.description, null],
+        function(err, result) {
+          if (err) {
+            callback(err);
+          }
+          else {
+            /*
+            Post inserted successfully. Let's use the result.insertId to retrieve
+            the post and send it to the caller!
+            */
+            conn.query(
+              'SELECT `id`,`name`,`description`, `createdAt`, `updatedAt` FROM `subreddits` WHERE `id` = ?', [result.insertId],
+              function(err, result) {
+                if (err) {
+                  callback(err);
+                }
+                else {
+                  callback(null, result[0]);
+                }
+              }
+            );
+          }
+        }
+      );
     }
   };
 };
