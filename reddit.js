@@ -238,6 +238,36 @@ module.exports = function RedditAPI(conn) {
           }
         }
       );
+    },
+    getAllSubreddits: function(callback) {
+      conn.query(`
+        SELECT 
+          subreddits.id AS subreddit_id, subreddits.name AS subreddit_name, 
+          subreddits.description AS subreddit_description, subreddits.createdAt AS subreddit_createdAt, 
+          subreddits.updatedAt AS subreddit_updatedAt
+        FROM subreddits
+        ORDER BY subreddits.createdAt DESC`,
+        function(err, results) {
+          if (err) {
+            callback(err);
+          }
+          else {
+            var subredditsArray = [];
+            var newSubObj = {};
+            results.map(function(subObj){
+              newSubObj = {
+                id: subObj.subreddit_id,
+                name: subObj.subreddit_name,
+                description: subObj.subreddit_description,
+                createdAt: subObj.subreddit_createdAt,
+                updatedAt: subObj.subreddit_updatedAt
+              };
+            subredditsArray.push(newSubObj);
+            });
+          callback(null, subredditsArray);
+          }
+        }
+      );
     }
   };
 };
